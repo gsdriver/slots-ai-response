@@ -21,6 +21,12 @@ When calling this API, use the following query parameters with the GET call:
 * timestamp: Optional - timestamp that client makes this call
 * status: Optional - set to `win` to retrieve a response if you won the last spin, or `lose` if you lost the last spin. If not set, both a win and a lose response will be returned
 
+Example:
+
+```
+https://{YOUR_AZURE_FUNCTION_URL}/api/slotsresponse?userId=1234&key={YOUR_KEY}&coins=50&games=10&wins=1&losses=0&status=win
+```
+
 # Response
 The response for a successful call will be the following:
 
@@ -31,3 +37,9 @@ The response for a successful call will be the following:
     response: string | { win: string, lose: string }, // A single string if status was set
                                                       // otherwise a structure with the responses for a winning and losing spin
 }
+
+Example:
+
+```
+{"timeElasped":558,"prompt":"Let the user know whether they won or lost. Look at their play history. Keep the response under 20 words.","response":"Well done! You're on a winning streak. Keep it up!"}
+```
