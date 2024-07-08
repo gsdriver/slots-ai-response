@@ -28,9 +28,9 @@ export const getSlotResponse = async (history: SlotHistory, status: string | und
     const client = new AzureOpenAI({ endpoint, apiKey, apiVersion, deployment });
 
     const systemPrompts = [
-        'Provide a response to let the user whether they won or lost. Look at their play history. Provide a funny response but encourage them to keep trying if they lost. Keep the response under 20 words.',
-        'Let the user know whether they won or lost. Look at their play history. Keep the response under 20 words.',
-        'Let the user know if they won or lost. Give a sarcastic response if they lost. Keep the response under 20 words.',
+        'Provide a response to let the user whether they won or lost. Look at their play history. Provide a funny response but encourage them to keep trying if they lost. At the end of the response ask if they would like to keep playing. Keep the response under 20 words.',
+        'Let the user know whether they won or lost. Look at their play history. Ask if they would like to keep playing. Keep the response under 20 words.',
+        'Let the user know if they won or lost. Give a sarcastic response if they lost. Encourage them to keep playing with a yes/no question. Keep the response under 20 words.',
     ];
 
     const prompt = randomPrompt(history, systemPrompts);
