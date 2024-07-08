@@ -1,2 +1,2 @@
 # slots-ai-response
-Provides AI-generated response to slot machine game
+Uses LLM to generate an AI response to slot machine game
