@@ -1,29 +1,24 @@
 
 import { AzureOpenAI } from 'openai';
 import { ChatCompletion } from 'openai/resources';
+import { storeResponse } from './storage';
 const seedrandom = require('seedrandom');
 
-export class SlotHistory {
+export class SlotInput {
     userId?: string;
-    timestamp?: number;
-    coins: number;
-    gamesPlayed: number;
-    winStreak: number;
-    loseStreak: number;
+    timestamp: number;
+    speech: string;
+    status: 'win' | 'lose';
+    games: number;
+    wins: number;
+    losses: number;
 };
 
-export class SlotResponse {
-    prompt: string;
-    response: string | { win: string, lose: string};
-}
-
-export const getSlotResponse = async (history: SlotHistory, status: string | undefined): Promise<SlotResponse> => {
+export const getSlotResponse = async (input: SlotInput): Promise<string> => {
     const deployment = process.env.OPENAI_DEPLOYMENT_ID;
     const apiVersion = '2024-02-01';
     const endpoint = process.env.OPENAI_URL;
     const apiKey = process.env.OPENAI_KEY;
-    const getWinStatus: boolean = (status || '').toLowerCase() !== 'lose';
-    const getLoseStatus: boolean = (status || '').toLowerCase() !== 'win';
 
     const client = new AzureOpenAI({ endpoint, apiKey, apiVersion, deployment });
 
@@ -33,66 +28,55 @@ export const getSlotResponse = async (history: SlotHistory, status: string | und
         'Let the user know if they won or lost. Give a sarcastic response if they lost. Encourage them to keep playing with a yes/no question. Keep the response under 20 words.',
     ];
 
-    const prompt = randomPrompt(history, systemPrompts);
+    const prompt = randomPrompt(input, systemPrompts);
 
-    // You can ask for a win response, lose response, or both (useful if you want to call this function async before knowing the result)
-    let winResult: ChatCompletion;
-    let loseResult: ChatCompletion;
+    // Update speech so it is text only, and remove the last question if present
+    let speech = input.speech.replace(/(<([^>]+)>)/ig, '');
+    const speechSentences: string[] = speech.replace(/([.?!])\s*(?=[A-Z])/g, "$1|").split("|");
+    if (speechSentences[speechSentences.length - 1].endsWith('?')) {
+        speech = speechSentences.slice(0, speechSentences.length - 1).join(' ');
+    }
 
-    if (getWinStatus) {
-        winResult = await client.chat.completions.create({
+    let result: ChatCompletion;
+    if (input.status === 'win') {
+        result = await client.chat.completions.create({
             messages: [
                 { role: "system", content: prompt },
+                { role: "assistant", content: input.speech },
                 { role: "user", content: 'You won this spin' },
-                { role: "user", content: `You played ${history.gamesPlayed} games this session.` },
-                { role: "user", content: `You have ${history.coins} coins.` },
-                { role: "user", content: (history.loseStreak > 0) ? `You broke a losing streak of ${history.loseStreak} games.` : `You are on a winning streak of ${history.winStreak + 1} games.` },
+                { role: "user", content: `You played ${input.games} games this session.` },
+                { role: "user", content: (input.losses > 0) ? `You broke a losing streak of ${input.losses} games.` : `You are on a winning streak of ${input.wins + 1} games.` },
             ],
             model: '',
             max_tokens: 100,
         });
-    }
-    if (getLoseStatus) {
-        loseResult = await client.chat.completions.create({
+
+        // Store the response in blob storage
+        await storeResponse('win', input, prompt, result.choices[0].message.content);
+    } else {
+        result = await client.chat.completions.create({
             messages: [
                 { role: "system", content: prompt },
+                { role: "assistant", content: input.speech },
                 { role: "user", content: 'You lost this spin' },
-                { role: "user", content: `You played ${history.gamesPlayed} games this session.` },
-                { role: "user", content: `You have ${history.coins} coins.` },
-                { role: "user", content: (history.loseStreak > 0) ? `You are on a losing streak of ${history.loseStreak + 1} games.` : `You broke a winning streak of ${history.winStreak} games.` },
+                { role: "user", content: `You played ${input.games} games this session.` },
+                { role: "user", content: (input.losses > 0) ? `You are on a losing streak of ${input.losses + 1} games.` : `You broke a winning streak of ${input.wins} games.` },
             ],
             model: '',
             max_tokens: 100,
         });
+
+        // Store the response in blob storage
+        await storeResponse('lose', input, prompt, result.choices[0].message.content);
     }
 
-    if (winResult && loseResult) {
-        return {
-            prompt,
-            response: {
-                win: winResult.choices[0].message.content,
-                lose: loseResult.choices[0].message.content,
-            },
-        };
-    }
-
-    if (winResult) {
-        return {
-            prompt,
-            response: winResult.choices[0].message.content,
-        };
-    }
-
-    return {
-        prompt,
-        response: loseResult?.choices[0].message.content,
-    };
+    return result.choices[0].message.content;
 };
 
-const randomPrompt = (history: SlotHistory, prompts: string[]): string => {
+const randomPrompt = (input: SlotInput, prompts: string[]): string => {
     let result: number;
 
-    const randomValue = seedrandom(`${history.userId || 'abc'} ${history.timestamp || Date.now()}`)();
+    const randomValue = seedrandom(`${input.userId || 'abc'} ${input.timestamp || Date.now()}`)();
     result = Math.floor(randomValue * prompts.length);
     if (result == prompts.length) {
       result--;
