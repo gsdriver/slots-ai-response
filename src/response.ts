@@ -23,8 +23,10 @@ export const getSlotResponse = async (input: SlotInput): Promise<string> => {
     const client = new AzureOpenAI({ endpoint, apiKey, apiVersion, deployment });
 
     const systemPrompts = [
-        'Provide a response to let the user whether they won or lost. Look at their play history. Provide a funny response but encourage them to keep trying if they lost. At the end of the response ask if they would like to keep playing. Keep the response under 20 words.',
-        'Let the user know whether they won or lost. Look at their play history. Ask if they would like to keep playing. Keep the response under 20 words.',
+        'You are a slot machine. Ask a question that encourages the user to keep playing. Be sarcastic if they lost. Keep the response under 20 words.',
+        'You are a slot machine. Make a joke about gambling but encourage the user to keep playing. End the response with a yes/no question and keep the response under 20 words.',
+        'Provide a response to let the user whether they won or lost. Look at how many games they\'ve played. Provide a funny response but encourage them to keep trying if they lost. The response should end in a yes/no question and be under 20 words.',
+        'Let the user know whether they won or lost. Observe their winning or losing streak. Ask if they would like to keep playing. Keep the response under 20 words.',
         'Let the user know if they won or lost. Give a sarcastic response if they lost. Encourage them to keep playing with a yes/no question. Keep the response under 20 words.',
     ];
 
@@ -43,12 +45,12 @@ export const getSlotResponse = async (input: SlotInput): Promise<string> => {
             messages: [
                 { role: "system", content: prompt },
                 { role: "assistant", content: input.speech },
-                { role: "user", content: 'You won this spin' },
-                { role: "user", content: `You played ${input.games} games this session.` },
-                { role: "user", content: (input.losses > 0) ? `You broke a losing streak of ${input.losses} games.` : `You are on a winning streak of ${input.wins + 1} games.` },
+                { role: "assistant", content: 'You won this spin' },
+                { role: "assistant", content: `You played ${input.games} games this session.` },
+                { role: "assistant", content: (input.losses > 0) ? `You broke a losing streak of ${input.losses} games.` : `You are on a winning streak of ${input.wins + 1} games.` },
             ],
             model: '',
-            max_tokens: 100,
+            max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS, 10) || 100,
         });
 
         // Store the response in blob storage
@@ -58,12 +60,12 @@ export const getSlotResponse = async (input: SlotInput): Promise<string> => {
             messages: [
                 { role: "system", content: prompt },
                 { role: "assistant", content: input.speech },
-                { role: "user", content: 'You lost this spin' },
-                { role: "user", content: `You played ${input.games} games this session.` },
-                { role: "user", content: (input.losses > 0) ? `You are on a losing streak of ${input.losses + 1} games.` : `You broke a winning streak of ${input.wins} games.` },
+                { role: "assistant", content: 'You lost this spin' },
+                { role: "assistant", content: `You played ${input.games} games this session.` },
+                { role: "assistant", content: (input.losses > 0) ? `You are on a losing streak of ${input.losses + 1} games.` : `You broke a winning streak of ${input.wins} games.` },
             ],
             model: '',
-            max_tokens: 100,
+            max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS, 10) || 100,
         });
 
         // Store the response in blob storage

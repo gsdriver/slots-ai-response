@@ -7,6 +7,7 @@ To use this repo, copy the `.sample-env` file to `.env` and set environment vari
 * ACCESS_KEY: A secret value that must be provided by the client to consume this API
 * OPENAI_URL: URL to your own OpenAI endpoint
 * OPENAI_KEY: Key to access your OpenAI endpoint
+* OPENAI_MAX_TOKENS: The number of tokens to use in the OpenAI request (default 100)
 * OPENAI_DEPLOYMENT_ID: The model to use with your OpenAI endpoint
 * AZURE_STORAGE_ACCOUNT_NAME: If set a blob storage account which will be used to hold prompts and responses for later analysis
 * AZURE_STORAGE_ACCOUNT_KEY: The key for the optional blob storage noted above
