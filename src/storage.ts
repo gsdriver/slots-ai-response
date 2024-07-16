@@ -1,4 +1,4 @@
-import { BlobServiceClient, StorageSharedKeyCredential } from "@azure/storage-blob";
+import { BlobServiceClient, ContainerClient, StorageSharedKeyCredential } from "@azure/storage-blob";
 
 // Save this as a global connection to blob storage
 let blobServiceClient: BlobServiceClient;
@@ -24,9 +24,12 @@ export const storeResponse = async (result: 'win' | 'lose', input: any, prompt: 
       }
 
       // Upload the response to the blob storage
-      const userId = (input.userId || 'default').replace(/[^a-zA-Z0-9]/g, "");
-      const containerClient = await blobServiceClient.getContainerClient('prompts');
-      uploadBlobFromString(containerClient, `${result}/${userId}/${result}${Date.now().valueOf()}.json`, JSON.stringify(Object.assign(input, { prompt, response })));
+      const userId: string = (input.userId || 'default').replace(/[^a-zA-Z0-9]/g, "");
+      const containerClient: ContainerClient = await blobServiceClient.getContainerClient('prompts');
+      const date: Date = new Date();
+      const formattedDate: string = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+      
+      uploadBlobFromString(containerClient, `${formattedDate}/${userId}/${result}${Date.now().valueOf()}.json`, JSON.stringify(Object.assign(input, { prompt, response })));
     }
   } catch (e) {
     console.log(`Storage error: ${e}`);
