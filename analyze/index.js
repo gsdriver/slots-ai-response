@@ -49,7 +49,7 @@ const savePrompts = (prompts, file) => {
       games: prompt.games,
       wins: prompt.wins,
       losses: prompt.losses,
-      speech: prompt.speech,
+      speech: prompt.speech.replace(/(<([^>]+)>)/ig, ''),
     };
   });
 
@@ -80,12 +80,16 @@ const readPrompts = async (params) => {
 
     // Now read each blob in the list
     for await (const blob of blobList) {
-      if (considerBlob(blob, params)) {
-        const blockBlobClient = containerClient.getBlockBlobClient(blob.name);
-        const downloadBlockBlobResponse = await blockBlobClient.download(0);
-        const downloaded = (await streamToBuffer(downloadBlockBlobResponse.readableStreamBody)).toString();
+      try {
+        if (considerBlob(blob, params)) {
+          const blockBlobClient = containerClient.getBlockBlobClient(blob.name);
+          const downloadBlockBlobResponse = await blockBlobClient.download(0);
+          const downloaded = (await streamToBuffer(downloadBlockBlobResponse.readableStreamBody)).toString();
 
-        prompts.push(JSON.parse(downloaded));
+          prompts.push(JSON.parse(downloaded));
+        }
+      } catch(e) {
+        console.log(`${e}\r\n\r\n`);
       }
     }
   }

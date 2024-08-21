@@ -2,7 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/fu
 import { getSlotResponse, SlotInput } from "../response";
 import { getRequestParameter, getTimestamp } from "../utils";
 
-export async function slotsresponse(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+export async function generateresponse(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     const start = Date.now();
 
     // First verify that they sent in a proper key
@@ -18,12 +18,13 @@ export async function slotsresponse(request: HttpRequest, context: InvocationCon
     const games: number = getRequestParameter(request, 'games', 'number') as number;
     const wins: number = getRequestParameter(request, 'wins', 'number') as number;
     const losses: number = getRequestParameter(request, 'losses', 'number') as number;
-    const status: string = getRequestParameter(request, 'status', 'string') as string;
-    const speech: string = getRequestParameter(request, 'speech', 'string') as string;
+    const reels: string = getRequestParameter(request, 'reels', 'string') as string;
     const userId: string = getRequestParameter(request, 'userId', 'string') as string;
+    const payout: number = getRequestParameter(request, 'payout', 'number') as number;
+    const bankroll: number = getRequestParameter(request, 'bankroll', 'number') as number;
     const getDetails: string = getRequestParameter(request, 'getDetails', 'string') as string;
 
-    if (isNaN(games) || isNaN(wins) || isNaN(losses) || (['win', 'lose'].indexOf(status) === -1)) {
+    if (isNaN(games) || isNaN(wins) || isNaN(losses) || isNaN(payout) || isNaN(bankroll)) {
         return {
             status: 400,
             body: JSON.stringify({ error: 'Invalid parameters', timeElasped: Date.now() - start }),
@@ -33,12 +34,13 @@ export async function slotsresponse(request: HttpRequest, context: InvocationCon
     const input: SlotInput = {
         userId,
         timestamp,
-        speech,
-        status: status as 'win' | 'lose',
+        reels,
+        payout,
+        bankroll,
         games,
         wins,
         losses,
-        fullResponse: false,
+        fullResponse: true,
     };
 
     let slotResponse;
@@ -64,10 +66,11 @@ export async function slotsresponse(request: HttpRequest, context: InvocationCon
         status: 200,
         body: JSON.stringify(body),
     };
+
 };
 
-app.http('slotsresponse', {
+app.http('generateresponse', {
     methods: ['GET'],
     authLevel: 'anonymous',
-    handler: slotsresponse
+    handler: generateresponse
 });

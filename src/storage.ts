@@ -10,7 +10,7 @@ const uploadBlobFromString = async (containerClient, blobName, fileContentsAsStr
     await blockBlobClient.upload(fileContentsAsString, fileContentsAsString.length);
 };
 
-export const storeResponse = async (result: 'win' | 'lose', input: any, prompt: string, response: string) => {
+export const storeResponse = async (wonSpin: boolean, input: any, prompt: string, response: string) => {
   try {
     if (process.env.AZURE_STORAGE_ACCOUNT_NAME && process.env.AZURE_STORAGE_ACCOUNT_KEY) {
       // Get the blob client if not already instantiated
@@ -29,7 +29,7 @@ export const storeResponse = async (result: 'win' | 'lose', input: any, prompt: 
       const date: Date = new Date();
       const formattedDate: string = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
       
-      uploadBlobFromString(containerClient, `${formattedDate}/${userId}/${result}${Date.now().valueOf()}.json`, JSON.stringify(Object.assign(input, { prompt, response })));
+      uploadBlobFromString(containerClient, `${formattedDate}/${userId}/${wonSpin ? "win" : "lose"}${Date.now().valueOf()}.json`, JSON.stringify(Object.assign(input, { prompt, response })));
     }
   } catch (e) {
     console.log(`Storage error: ${e}`);
